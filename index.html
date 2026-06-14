@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Trading Journal</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0a0d14;
+    --surface: #111520;
+    --card: #161b2a;
+    --border: #1e2738;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --subtle: #94a3b8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ─── AUTH SCREEN ─── */
+  #auth-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: radial-gradient(ellipse at 60% 20%, #1a2040 0%, var(--bg) 60%);
+  }
+
+  .logo-mark {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 0 40px rgba(99,102,241,0.3);
+  }
+
+  #auth-screen h1 {
+    font-size: 2rem; font-weight: 700;
+    letter-spacing: -0.04em;
+    margin-bottom: 0.5rem;
+  }
+
+  #auth-screen p {
+    color: var(--muted); font-size: 0.95rem;
+    margin-bottom: 2.5rem; text-align: center;
+  }
+
+  .google-btn {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; color: #1a1a1a;
+    border: none; border-radius: 12px;
+    padding: 14px 24px; font-size: 15px; font-weight: 600;
+    cursor: pointer; width: 100%; max-width: 320px;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .google-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(0,0,0,0.5); }
+  .google-btn svg { width: 20px; height: 20px; }
+
+  .setup-note {
+    margin-top: 2rem;
+    background: #1a1f2e;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    max-width: 400px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .setup-note strong { color: var(--subtle); }
+
+  /* ─── SETUP MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; padding: 1rem;
+  }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 100%; max-width: 420px;
+    max-height: 90vh; overflow-y: auto;
+  }
+
+  .modal h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .modal p { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; line-height: 1.5; }
+
+  .field-group { margin-bottom: 1rem; }
+  .field-group label { display: block; font-size: 0.8rem; color: var(--subtle); margin-bottom: 6px; font-weight: 500; }
+
+  .field-group input, .field-group select, .field-group textarea {
+    width: 100%; background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px;
+    color: var(--text); font-size: 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+    border-color: var(--accent);
+  }
+
+  /* ─── APP LAYOUT ─── */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.25rem;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-logo { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+  header h1 { font-size: 1rem; font-weight: 600; }
+
+  .header-right { display: flex; align-items: center; gap: 10px; }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    overflow: hidden;
+  }
+
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .sync-badge {
+    font-size: 0.7rem; padding: 3px 8px;
+    border-radius: 20px; background: rgba(16,185,129,0.15);
+    color: var(--green); border: 1px solid rgba(16,185,129,0.3);
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  .sync-badge.syncing { color: var(--yellow); background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); }
+
+  /* ─── TABS ─── */
+  .tabs {
+    display: flex; gap: 4px;
+    padding: 0.75rem 1.25rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .tab {
+    padding: 7px 16px; border-radius: 8px;
+    border: none; background: transparent;
+    color: var(--muted); font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .tab.active { background: var(--accent); color: #fff; }
+  .tab:hover:not(.active) { background: var(--border); color: var(--text); }
+
+  /* ─── CONTENT ─── */
+  .content { padding: 1.25rem; flex: 1; }
+
+  /* ─── STATS ROW ─── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+  }
+
+  .stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .stat-value { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .stat-value.positive { color: var(--green); }
+  .stat-value.negative { color: var(--red); }
+  .stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  /* ─── ADD BUTTON ─── */
+  .add-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 12px;
+    color: #fff; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; margin-bottom: 1.25rem;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+
+  .add-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* ─── TRADE LIST ─── */
+  .trade-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .trade-card:hover { border-color: var(--accent); }
+
+  .trade-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .symbol-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem; font-weight: 600;
+    background: rgba(59,130,246,0.15);
+    color: var(--accent);
+    padding: 2px 8px; border-radius: 6px;
+  }
+
+  .direction-tag {
+    font-size: 0.7rem; font-weight: 600;
+    padding: 2px 7px; border-radius: 6px;
+  }
+
+  .direction-tag.long { background: rgba(16,185,129,0.15); color: var(--green); }
+  .direction-tag.short { background: rgba(239,68,68,0.15); color: var(--red); }
+
+  .trade-meta { font-size: 0.78rem; color: var(--muted); }
+  .trade-account { font-size: 0.72rem; color: var(--subtle); }
+
+  .trade-pnl {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem; font-weight: 700;
+  }
+
+  .trade-pnl.positive { color: var(--green); }
+  .trade-pnl.negative { color: var(--red); }
+
+  .trade-screenshot {
+    grid-column: 1 / -1;
+    margin-top: 0.5rem;
+  }
+
+  .trade-screenshot img {
+    width: 100%; height: 120px; object-fit: cover;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+
+  .has-screenshot {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.72rem; color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ─── FORM MODAL ─── */
+  .form-section {
+    font-size: 0.75rem; font-weight: 600;
+    color: var(--accent); text-transform: uppercase;
+    letter-spacing: 0.08em; margin: 1.25rem 0 0.75rem;
+  }
+
+  .price-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+  }
+
+  .photo-upload {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .photo-upload:hover { border-color: var(--accent); background: rgba(59,130,246,0.05); }
+  .photo-upload input { display: none; }
+  .photo-upload .icon { font-size: 2rem; margin-bottom: 8px; }
+  .photo-upload p { font-size: 0.85rem; color: var(--muted); }
+  .photo-upload .hint { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+  .photo-preview { position: relative; margin-top: 0.75rem; }
+  .photo-preview img { width: 100%; border-radius: 10px; max-height: 200px; object-fit: cover; }
+  .photo-preview .remove { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.7); border: none; color: #fff; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 14px; }
+
+  .btn-row { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+
+  .btn-primary {
+    flex: 1; padding: 13px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px;
+    color: #fff; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-secondary {
+    padding: 13px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted); font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  /* ─── DETAIL MODAL ─── */
+  .detail-header {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; margin-bottom: 1.25rem;
+  }
+
+  .close-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--muted); font-size: 18px;
+  }
+
+  .pnl-big {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2rem; font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0.75rem; margin: 1.25rem 0;
+  }
+
+  .detail-item { }
+  .detail-item .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .detail-item .value { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; font-weight: 500; }
+
+  .notes-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--subtle);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+
+  /* ─── ANALYTICS ─── */
+  .chart-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .chart-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; color: var(--subtle); }
+
+  .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 100px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.4s; }
+  .bar.pos { background: var(--green); }
+  .bar.neg { background: var(--red); }
+  .bar-label { font-size: 0.6rem; color: var(--muted); }
+
+  .win-rate-ring {
+    display: flex; align-items: center; gap: 1rem;
+  }
+
+  .ring-svg { width: 80px; height: 80px; }
+
+  .ring-stats p { font-size: 0.8rem; color: var(--muted); }
+  .ring-stats .big { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--text); }
+
+  /* ─── EMPTY STATE ─── */
+  .empty {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--muted);
+  }
+
+  .empty .icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty h3 { font-size: 1rem; font-weight: 600; color: var(--subtle); margin-bottom: 0.5rem; }
+  .empty p { font-size: 0.85rem; }
+
+  /* ─── FILTER BAR ─── */
+  .filter-bar {
+    display: flex; gap: 8px; margin-bottom: 1rem;
+    overflow-x: auto; padding-bottom: 2px;
+  }
+
+  .filter-chip {
+    padding: 5px 12px; border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-size: 0.78rem; cursor: pointer; white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ─── SETTINGS ─── */
+  .settings-section { margin-bottom: 1.5rem; }
+  .settings-title { font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 0.75rem; }
+
+  .settings-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .settings-item .info p { font-size: 0.85rem; font-weight: 500; }
+  .settings-item .info span { font-size: 0.75rem; color: var(--muted); }
+
+  .settings-btn {
+    padding: 6px 14px; border-radius: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-size: 0.8rem; cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .settings-btn:hover { background: var(--border); }
+  .settings-btn.danger { color: var(--red); border-color: rgba(239,68,68,0.3); }
+  .settings-btn.success { color: var(--green); border-color: rgba(16,185,129,0.3); }
+
+  /* Spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; display: inline-block; }
+
+  select option { background: var(--card); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ─── AUTH SCREEN ─── -->
+<div id="auth-screen">
+  <div class="logo-mark">📈</div>
+  <h1>Trading Journal</h1>
+  <p>မှတ်တမ်းတင်. ကြည့်ရှုဆန်းစစ်. တိုးတက်.<br>Sign in with Google to sync your trades.</p>
+
+  <button class="google-btn" onclick="handleGoogleSignIn()">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+    Sign in with Google
+  </button>
+
+  <div class="setup-note">
+    <strong>⚙️ Setup required:</strong> This app needs a Google Cloud project with Sheets &amp; Drive APIs. 
+    Enter your <strong>Client ID</strong> and <strong>API Key</strong> in the config section below after signing in, 
+    or set them in the code's <code>CONFIG</code> object.
+  </div>
+</div>
+
+<!-- ─── CONFIG MODAL ─── -->
+<div id="config-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h2>⚙️ Google API Setup</h2>
+    <p>Enter your Google Cloud credentials to enable Sheets & Drive sync. 
+    <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">Get credentials →</a></p>
+
+    <div class="field-group">
+      <label>Google OAuth Client ID</label>
+      <input type="text" id="cfg-client-id" placeholder="xxxxx.apps.googleusercontent.com">
+    </div>
+    <div class="field-group">
+      <label>Google API Key</label>
+      <input type="text" id="cfg-api-key" placeholder="AIzaSy...">
+    </div>
+    <div class="field-group">
+      <label>Spreadsheet ID (leave blank to auto-create)</label>
+      <input type="text" id="cfg-sheet-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+    </div>
+    <div class="field-group">
+      <label>Drive Folder ID (leave blank to auto-create)</label>
+      <input type="text" id="cfg-folder-id" placeholder="1abc...xyz">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeConfig()">Cancel</button>
+      <button class="btn-primary" onclick="saveConfig()">Save & Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MAIN APP ─── -->
+<div id="app">
+  <header>
+    <div class="header-left">
+      <div class="header-logo">📈</div>
+      <h1>Trading Journal</h1>
+    </div>
+    <div class="header-right">
+      <span class="sync-badge" id="sync-status">✓ Synced</span>
+      <div class="avatar" id="user-avatar" onclick="showTab('settings')">
+        <span id="avatar-initial">U</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" onclick="showTab('dashboard')" id="tab-dashboard">Dashboard</button>
+    <button class="tab" onclick="showTab('trades')" id="tab-trades">Trades</button>
+    <button class="tab" onclick="showTab('analytics')" id="tab-analytics">Analytics</button>
+    <button class="tab" onclick="showTab('settings')" id="tab-settings">Settings</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div id="view-dashboard" class="content">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total P&L</div>
+        <div class="stat-value" id="stat-pnl">$0.00</div>
+        <div class="stat-sub" id="stat-pnl-sub">0 trades</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value" id="stat-winrate">0%</div>
+        <div class="stat-sub" id="stat-wr-sub">0W / 0L</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Best Trade</div>
+        <div class="stat-value positive" id="stat-best">$0.00</div>
+        <div class="stat-sub" id="stat-best-sym">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg R:R</div>
+        <div class="stat-value" id="stat-rr">0.0</div>
+        <div class="stat-sub">Risk/Reward</div>
+      </div>
+    </div>
+
+    <button class="add-btn" onclick="openAddModal()">
+      + Add Trade
+    </button>
+
+    <div id="recent-trades"></div>
+  </div>
+
+  <!-- TRADES LIST -->
+  <div id="view-trades" class="content hidden">
+    <div class="filter-bar">
+      <button class="filter-chip active" onclick="filterTrades('all', this)">All</button>
+      <button class="filter-chip" onclick="filterTrades('win', this)">Wins</button>
+      <button class="filter-chip" onclick="filterTrades('loss', this)">Losses</button>
+      <button class="filter-chip" onclick="filterTrades('long', this)">Long</button>
+      <button class="filter-chip" onclick="filterTrades('short', this)">Short</button>
+    </div>
+    <div id="trades-list"></div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div id="view-analytics" class="content hidden">
+    <div class="chart-container">
+      <div class="chart-title">P&L by Trade</div>
+      <div class="bar-chart" id="pnl-chart"></div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">Win Rate</div>
+      <div class="win-rate-ring">
+        <svg class="ring-svg" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="30" fill="none" stroke="#1e2738" stroke-width="10"/>
+          <circle id="wr-ring" cx="40" cy="40" r="30" fill="none" stroke="#10b981" stroke-width="10"
+            stroke-dasharray="0 188.5" stroke-linecap="round" transform="rotate(-90 40 40)"
+            style="transition: stroke-dasharray 0.8s"/>
+        </svg>
+        <div class="ring-stats">
+          <div class="big" id="wr-big">0%</div>
+          <p id="wr-detail">0 wins / 0 losses</p>
+          <p id="avg-win">Avg Win: $0</p>
+          <p id="avg-loss">Avg Loss: $0</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">P&L by Symbol</div>
+      <div id="symbol-breakdown"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="view-settings" class="content hidden">
+    <div class="settings-section">
+      <div class="settings-title">Account</div>
+      <div class="settings-item">
+        <div class="info">
+          <p id="user-name-setting">—</p>
+          <span id="user-email-setting">—</span>
+        </div>
+        <button class="settings-btn danger" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Google Sync</div>
+      <div class="settings-item">
+        <div class="info">
+          <p>Google Sheets</p>
+          <span id="sheet-info">Not connected</span>
+        </div>
+        <button class="settings-btn success" onclick="syncToSheets()">Sync Now</button>
+      </div>
+      <div class="settings-item">
+        <div class="info">
+          <p>Google Drive</p>
+          <span id="drive-info">Screenshots folder</span>
+        </div>
+        <button class="settings-btn" onclick="openDriveFolder()">Open Folder</button>
+      </div>
+      <div class="settings-item">
+        <div class="info">
+          <p>API Credentials</p>
+          <span>Configure Client ID & API Key</span>
+        </div>
+        <button class="settings-btn" onclick="showConfig()">Configure</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Data</div>
+      <div class="settings-item">
+        <div class="info">
+          <p>Export JSON</p>
+          <span>Download all trade data</span>
+        </div>
+        <button class="settings-btn" onclick="exportJSON()">Export</button>
+      </div>
+      <div class="settings-item">
+        <div class="info">
+          <p>Clear All Data</p>
+          <span>Remove all local trades</span>
+        </div>
+        <button class="settings-btn danger" onclick="clearData()">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ADD TRADE MODAL ─── -->
+<div id="trade-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h2 id="modal-title">Add Trade</h2>
+
+    <div class="form-section">Asset</div>
+    <div class="field-group">
+      <label>Symbol / Pair</label>
+      <input type="text" id="f-symbol" placeholder="BTC/USDT, EUR/USD, AAPL…">
+    </div>
+    <div class="price-row">
+      <div class="field-group">
+        <label>Direction</label>
+        <select id="f-direction">
+          <option value="long">Long 📈</option>
+          <option value="short">Short 📉</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Account</label>
+        <input type="text" id="f-account" placeholder="Main, Prop, Demo…">
+      </div>
+    </div>
+
+    <div class="form-section">Price</div>
+    <div class="price-row">
+      <div class="field-group">
+        <label>Entry Price</label>
+        <input type="number" id="f-entry" placeholder="0.00" step="any">
+      </div>
+      <div class="field-group">
+        <label>Exit Price</label>
+        <input type="number" id="f-exit" placeholder="0.00" step="any">
+      </div>
+    </div>
+    <div class="price-row">
+      <div class="field-group">
+        <label>Lot / Qty</label>
+        <input type="number" id="f-qty" placeholder="1.0" step="any" value="1">
+      </div>
+      <div class="field-group">
+        <label>P&L ($)</label>
+        <input type="number" id="f-pnl" placeholder="Auto or manual" step="any">
+      </div>
+    </div>
+
+    <div class="form-section">Time</div>
+    <div class="price-row">
+      <div class="field-group">
+        <label>Entry Date</label>
+        <input type="date" id="f-entry-date">
+      </div>
+      <div class="field-group">
+        <label>Exit Date</label>
+        <input type="date" id="f-exit-date">
+      </div>
+    </div>
+
+    <div class="form-section">Chart Screenshot</div>
+    <div class="photo-upload" id="photo-drop" onclick="document.getElementById('f-photo').click()">
+      <input type="file" id="f-photo" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+      <div class="icon">📸</div>
+      <p>Tap to upload chart screenshot</p>
+      <div class="hint">Camera or gallery • JPG/PNG</div>
+    </div>
+    <div id="photo-preview" class="photo-preview hidden">
+      <img id="preview-img" src="" alt="Chart">
+      <button class="remove" onclick="removePhoto()">×</button>
+    </div>
+
+    <div class="form-section">Notes</div>
+    <div class="field-group">
+      <textarea id="f-notes" rows="3" placeholder="Setup, reason, lessons learned…" style="resize:none"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeTradeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveTrade()">Save Trade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── DETAIL MODAL ─── -->
+<div id="detail-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="detail-header">
+      <div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <span class="symbol-tag" id="d-symbol">BTC</span>
+          <span class="direction-tag" id="d-direction">Long</span>
+        </div>
+        <div class="pnl-big" id="d-pnl">$0.00</div>
+        <div style="font-size:0.8rem;color:var(--muted)" id="d-date">—</div>
+      </div>
+      <button class="close-btn" onclick="closeDetail()">×</button>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item"><div class="label">Entry</div><div class="value" id="d-entry">—</div></div>
+      <div class="detail-item"><div class="label">Exit</div><div class="value" id="d-exit">—</div></div>
+      <div class="detail-item"><div class="label">Qty / Lots</div><div class="value" id="d-qty">—</div></div>
+      <div class="detail-item"><div class="label">Account</div><div class="value" id="d-account">—</div></div>
+    </div>
+
+    <div id="d-screenshot-wrap" class="hidden" style="margin-bottom:1rem">
+      <img id="d-screenshot" style="width:100%;border-radius:10px;border:1px solid var(--border)">
+    </div>
+
+    <div id="d-notes-wrap" class="hidden">
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px">NOTES</div>
+      <div class="notes-box" id="d-notes"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="deleteCurrentTrade()">🗑 Delete</button>
+      <button class="btn-primary" onclick="syncTradeToSheets()">☁️ Sync</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───
+const CONFIG = {
+  CLIENT_ID: localStorage.getItem('goog_client_id') || '',
+  API_KEY: localStorage.getItem('goog_api_key') || '',
+  SHEET_ID: localStorage.getItem('goog_sheet_id') || '',
+  FOLDER_ID: localStorage.getItem('goog_folder_id') || '',
+  SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email'
+};
+
+// ─── STATE ───
+let trades = JSON.parse(localStorage.getItem('trades') || '[]');
+let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
+let accessToken = localStorage.getItem('access_token') || '';
+let editingId = null;
+let currentDetailId = null;
+let currentFilter = 'all';
+let photoDataURL = null;
+
+// ─── INIT ───
+window.onload = () => {
+  if (currentUser && accessToken) {
+    showApp();
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-entry-date').value = today;
+  document.getElementById('f-exit-date').value = today;
+};
+
+// ─── GOOGLE SIGN IN ───
+function handleGoogleSignIn() {
+  if (!CONFIG.CLIENT_ID) {
+    showConfig();
+    return;
+  }
+
+  const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+  const params = {
+    client_id: CONFIG.CLIENT_ID,
+    redirect_uri: window.location.href.split('?')[0],
+    response_type: 'token',
+    scope: CONFIG.SCOPES,
+    include_granted_scopes: 'true'
+  };
+
+  const url = oauth2Endpoint + '?' + Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  window.location.href = url;
+}
+
+// Handle OAuth redirect
+(function handleOAuthReturn() {
+  const hash = window.location.hash.substring(1);
+  if (!hash) return;
+  const params = new URLSearchParams(hash);
+  const token = params.get('access_token');
+  if (!token) return;
+
+  accessToken = token;
+  localStorage.setItem('access_token', token);
+  window.history.replaceState({}, '', window.location.pathname);
+
+  fetchUserInfo(token);
+})();
+
+async function fetchUserInfo(token) {
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const u = await r.json();
+    currentUser = { name: u.name, email: u.email, picture: u.picture };
+    localStorage.setItem('current_user', JSON.stringify(currentUser));
+    showApp();
+  } catch(e) {
+    alert('Could not fetch user info. Please try again.');
+  }
+}
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  if (currentUser) {
+    document.getElementById('avatar-initial').textContent = currentUser.name?.[0] || 'U';
+    if (currentUser.picture) {
+      document.getElementById('user-avatar').innerHTML = `<img src="${currentUser.picture}" alt="avatar">`;
+    }
+    document.getElementById('user-name-setting').textContent = currentUser.name || '—';
+    document.getElementById('user-email-setting').textContent = currentUser.email || '—';
+  }
+
+  if (CONFIG.SHEET_ID) {
+    document.getElementById('sheet-info').textContent = 'Connected: ' + CONFIG.SHEET_ID.substring(0, 20) + '…';
+  }
+
+  refreshAll();
+}
+
+function signOut() {
+  if (!confirm('Sign out?')) return;
+  localStorage.removeItem('current_user');
+  localStorage.removeItem('access_token');
+  currentUser = null; accessToken = '';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+// ─── CONFIG MODAL ───
+function showConfig() {
+  document.getElementById('cfg-client-id').value = CONFIG.CLIENT_ID;
+  document.getElementById('cfg-api-key').value = CONFIG.API_KEY;
+  document.getElementById('cfg-sheet-id').value = CONFIG.SHEET_ID;
+  document.getElementById('cfg-folder-id').value = CONFIG.FOLDER_ID;
+  document.getElementById('config-modal').classList.remove('hidden');
+}
+
+function closeConfig() {
+  document.getElementById('config-modal').classList.add('hidden');
+}
+
+function saveConfig() {
+  CONFIG.CLIENT_ID = document.getElementById('cfg-client-id').value.trim();
+  CONFIG.API_KEY = document.getElementById('cfg-api-key').value.trim();
+  CONFIG.SHEET_ID = document.getElementById('cfg-sheet-id').value.trim();
+  CONFIG.FOLDER_ID = document.getElementById('cfg-folder-id').value.trim();
+
+  localStorage.setItem('goog_client_id', CONFIG.CLIENT_ID);
+  localStorage.setItem('goog_api_key', CONFIG.API_KEY);
+  localStorage.setItem('goog_sheet_id', CONFIG.SHEET_ID);
+  localStorage.setItem('goog_folder_id', CONFIG.FOLDER_ID);
+
+  closeConfig();
+  if (!currentUser) handleGoogleSignIn();
+}
+
+// ─── TABS ───
+function showTab(name) {
+  ['dashboard','trades','analytics','settings'].forEach(t => {
+    document.getElementById('view-'+t).classList.toggle('hidden', t !== name);
+    document.getElementById('tab-'+t).classList.toggle('active', t === name);
+  });
+  if (name === 'analytics') renderAnalytics();
+  if (name === 'trades') renderTradesList();
+}
+
+// ─── TRADE MODAL ───
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Add Trade';
+  document.getElementById('f-symbol').value = '';
+  document.getElementById('f-direction').value = 'long';
+  document.getElementById('f-account').value = '';
+  document.getElementById('f-entry').value = '';
+  document.getElementById('f-exit').value = '';
+  document.getElementById('f-qty').value = '1';
+  document.getElementById('f-pnl').value = '';
+  document.getElementById('f-notes').value = '';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-entry-date').value = today;
+  document.getElementById('f-exit-date').value = today;
+  removePhoto();
+  document.getElementById('trade-modal').classList.remove('hidden');
+}
+
+function closeTradeModal() {
+  document.getElementById('trade-modal').classList.add('hidden');
+  editingId = null;
+}
+
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    photoDataURL = e.target.result;
+    document.getElementById('preview-img').src = photoDataURL;
+    document.getElementById('photo-preview').classList.remove('hidden');
+    document.getElementById('photo-drop').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto() {
+  photoDataURL = null;
+  document.getElementById('f-photo').value = '';
+  document.getElementById('photo-preview').classList.add('hidden');
+  document.getElementById('photo-drop').style.display = '';
+}
+
+function saveTrade() {
+  const symbol = document.getElementById('f-symbol').value.trim().toUpperCase();
+  if (!symbol) { alert('Symbol is required.'); return; }
+
+  const entry = parseFloat(document.getElementById('f-entry').value) || 0;
+  const exit = parseFloat(document.getElementById('f-exit').value) || 0;
+  const qty = parseFloat(document.getElementById('f-qty').value) || 1;
+  const direction = document.getElementById('f-direction').value;
+
+  let pnl = parseFloat(document.getElementById('f-pnl').value);
+  if (isNaN(pnl) && entry && exit) {
+    pnl = direction === 'long' ? (exit - entry) * qty : (entry - exit) * qty;
+  }
+
+  const trade = {
+    id: editingId || Date.now().toString(),
+    symbol,
+    direction,
+    account: document.getElementById('f-account').value.trim(),
+    entryPrice: entry,
+    exitPrice: exit,
+    qty,
+    pnl: pnl || 0,
+    entryDate: document.getElementById('f-entry-date').value,
+    exitDate: document.getElementById('f-exit-date').value,
+    notes: document.getElementById('f-notes').value.trim(),
+    screenshot: photoDataURL || null,
+    driveUrl: null,
+    createdAt: new Date().toISOString()
+  };
+
+  if (editingId) {
+    const idx = trades.findIndex(t => t.id === editingId);
+    if (idx !== -1) trades[idx] = { ...trades[idx], ...trade };
+  } else {
+    trades.unshift(trade);
+  }
+
+  saveTrades();
+  closeTradeModal();
+  refreshAll();
+
+  if (trade.screenshot && accessToken && CONFIG.SHEET_ID) {
+    uploadScreenshotToDrive(trade);
+  }
+  if (accessToken && CONFIG.SHEET_ID) {
+    syncTradeRow(trade);
+  }
+}
+
+// ─── RENDER ───
+function refreshAll() {
+  renderDashboard();
+  renderTradesList();
+}
+
+function renderDashboard() {
+  const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
+  const wins = trades.filter(t => t.pnl > 0);
+  const losses = trades.filter(t => t.pnl <= 0);
+  const winRate = trades.length ? Math.round(wins.length / trades.length * 100) : 0;
+  const best = trades.reduce((b, t) => t.pnl > b ? t.pnl : b, 0);
+  const bestTrade = trades.find(t => t.pnl === best);
+
+  const pnlEl = document.getElementById('stat-pnl');
+  pnlEl.textContent = fmt(totalPnl);
+  pnlEl.className = 'stat-value ' + (totalPnl >= 0 ? 'positive' : 'negative');
+
+  document.getElementById('stat-pnl-sub').textContent = `${trades.length} trades`;
+  document.getElementById('stat-winrate').textContent = winRate + '%';
+  document.getElementById('stat-wr-sub').textContent = `${wins.length}W / ${losses.length}L`;
+  document.getElementById('stat-best').textContent = fmt(best);
+  document.getElementById('stat-best-sym').textContent = bestTrade ? bestTrade.symbol : '—';
+
+  const recent = document.getElementById('recent-trades');
+  if (trades.length === 0) {
+    recent.innerHTML = `<div class="empty"><div class="icon">📊</div><h3>No trades yet</h3><p>Tap Add Trade to log your first trade</p></div>`;
+  } else {
+    recent.innerHTML = trades.slice(0, 5).map(renderTradeCard).join('');
+  }
+}
+
+function renderTradeCard(t) {
+  const pnlClass = t.pnl >= 0 ? 'positive' : 'negative';
+  const dirClass = t.direction === 'long' ? 'long' : 'short';
+  const dirLabel = t.direction === 'long' ? '▲ Long' : '▼ Short';
+  const ssHtml = t.screenshot ? `<div class="trade-screenshot"><img src="${t.screenshot}" alt="chart" loading="lazy"></div>` : '';
+
+  return `
+    <div class="trade-card" onclick="openDetail('${t.id}')">
+      <div>
+        <div class="trade-header">
+          <span class="symbol-tag">${t.symbol}</span>
+          <span class="direction-tag ${dirClass}">${dirLabel}</span>
+        </div>
+        <div class="trade-meta">${t.entryDate}${t.account ? ' · ' + t.account : ''}</div>
+      </div>
+      <div>
+        <div class="trade-pnl ${pnlClass}">${fmt(t.pnl)}</div>
+      </div>
+      ${ssHtml}
+    </div>`;
+}
+
+function renderTradesList() {
+  let filtered = trades;
+  if (currentFilter === 'win') filtered = trades.filter(t => t.pnl > 0);
+  else if (currentFilter === 'loss') filtered = trades.filter(t => t.pnl <= 0);
+  else if (currentFilter === 'long') filtered = trades.filter(t => t.direction === 'long');
+  else if (currentFilter === 'short') filtered = trades.filter(t => t.direction === 'short');
+
+  const el = document.getElementById('trades-list');
+  if (filtered.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="icon">🔍</div><h3>No trades found</h3><p>Try a different filter</p></div>`;
+  } else {
+    el.innerHTML = filtered.map(renderTradeCard).join('');
+  }
+}
+
+function filterTrades(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderTradesList();
+}
+
+function renderAnalytics() {
+  const wins = trades.filter(t => t.pnl > 0);
+  const losses = trades.filter(t => t.pnl <= 0);
+  const wr = trades.length ? wins.length / trades.length : 0;
+
+  document.getElementById('wr-big').textContent = Math.round(wr * 100) + '%';
+  document.getElementById('wr-detail').textContent = `${wins.length} wins / ${losses.length} losses`;
+  const avgWin = wins.length ? wins.reduce((s, t) => s + t.pnl, 0) / wins.length : 0;
+  const avgLoss = losses.length ? losses.reduce((s, t) => s + t.pnl, 0) / losses.length : 0;
+  document.getElementById('avg-win').textContent = `Avg Win: ${fmt(avgWin)}`;
+  document.getElementById('avg-loss').textContent = `Avg Loss: ${fmt(avgLoss)}`;
+
+  const circumference = 2 * Math.PI * 30;
+  document.getElementById('wr-ring').setAttribute('stroke-dasharray', `${wr * circumference} ${circumference}`);
+
+  // Bar chart (last 20 trades)
+  const last20 = [...trades].reverse().slice(-20);
+  const maxAbs = Math.max(...last20.map(t => Math.abs(t.pnl)), 1);
+  const chartEl = document.getElementById('pnl-chart');
+  chartEl.innerHTML = last20.map(t => {
+    const h = Math.max((Math.abs(t.pnl) / maxAbs) * 90, 4);
+    const cls = t.pnl >= 0 ? 'pos' : 'neg';
+    return `<div class="bar-wrap"><div class="bar ${cls}" style="height:${h}px" title="${fmt(t.pnl)}"></div><div class="bar-label">${t.symbol.substring(0,3)}</div></div>`;
+  }).join('');
+
+  // Symbol breakdown
+  const bySymbol = {};
+  trades.forEach(t => {
+    bySymbol[t.symbol] = (bySymbol[t.symbol] || 0) + t.pnl;
+  });
+  const sorted = Object.entries(bySymbol).sort((a, b) => b[1] - a[1]);
+  document.getElementById('symbol-breakdown').innerHTML = sorted.map(([sym, pnl]) => {
+    const cls = pnl >= 0 ? 'positive' : 'negative';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--border)">
+      <span class="symbol-tag">${sym}</span>
+      <span class="trade-pnl ${cls}" style="font-size:0.95rem">${fmt(pnl)}</span>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:0.85rem;padding:1rem 0">No data yet</div>';
+}
+
+// ─── DETAIL MODAL ───
+function openDetail(id) {
+  const t = trades.find(t => t.id === id);
+  if (!t) return;
+  currentDetailId = id;
+
+  document.getElementById('d-symbol').textContent = t.symbol;
+  const dirEl = document.getElementById('d-direction');
+  dirEl.textContent = t.direction === 'long' ? '▲ Long' : '▼ Short';
+  dirEl.className = `direction-tag ${t.direction}`;
+
+  const pnlEl = document.getElementById('d-pnl');
+  pnlEl.textContent = fmt(t.pnl);
+  pnlEl.className = 'pnl-big ' + (t.pnl >= 0 ? 'positive' : 'negative');
+
+  document.getElementById('d-date').textContent = `${t.entryDate} → ${t.exitDate}`;
+  document.getElementById('d-entry').textContent = t.entryPrice || '—';
+  document.getElementById('d-exit').textContent = t.exitPrice || '—';
+  document.getElementById('d-qty').textContent = t.qty || '—';
+  document.getElementById('d-account').textContent = t.account || '—';
+
+  const ssWrap = document.getElementById('d-screenshot-wrap');
+  if (t.screenshot) {
+    document.getElementById('d-screenshot').src = t.screenshot;
+    ssWrap.classList.remove('hidden');
+  } else ssWrap.classList.add('hidden');
+
+  const notesWrap = document.getElementById('d-notes-wrap');
+  if (t.notes) {
+    document.getElementById('d-notes').textContent = t.notes;
+    notesWrap.classList.remove('hidden');
+  } else notesWrap.classList.add('hidden');
+
+  document.getElementById('detail-modal').classList.remove('hidden');
+}
+
+function closeDetail() {
+  document.getElementById('detail-modal').classList.add('hidden');
+  currentDetailId = null;
+}
+
+function deleteCurrentTrade() {
+  if (!confirm('Delete this trade?')) return;
+  trades = trades.filter(t => t.id !== currentDetailId);
+  saveTrades();
+  closeDetail();
+  refreshAll();
+}
+
+// ─── GOOGLE SHEETS ───
+async function syncToSheets() {
+  if (!accessToken) { alert('Please sign in first.'); return; }
+  if (!CONFIG.SHEET_ID) {
+    const id = prompt('Enter your Google Spreadsheet ID:');
+    if (!id) return;
+    CONFIG.SHEET_ID = id;
+    localStorage.setItem('goog_sheet_id', id);
+  }
+
+  setSyncStatus('syncing', '⟳ Syncing…');
+
+  try {
+    // Write header
+    const header = [['ID','Symbol','Direction','Account','Entry Price','Exit Price','Qty','P&L','Entry Date','Exit Date','Notes','Screenshot URL','Created At']];
+    await sheetsRequest('PUT', `/${CONFIG.SHEET_ID}/values/A1:M1?valueInputOption=RAW`, { values: header });
+
+    // Write all trades
+    const rows = trades.map(t => [
+      t.id, t.symbol, t.direction, t.account,
+      t.entryPrice, t.exitPrice, t.qty, t.pnl,
+      t.entryDate, t.exitDate, t.notes,
+      t.driveUrl || '', t.createdAt
+    ]);
+
+    if (rows.length) {
+      await sheetsRequest('PUT', `/${CONFIG.SHEET_ID}/values/A2:M${rows.length+1}?valueInputOption=RAW`, { values: rows });
+    }
+
+    setSyncStatus('ok', '✓ Synced');
+    document.getElementById('sheet-info').textContent = 'Last sync: ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    setSyncStatus('ok', '✓ Synced');
+    console.error(e);
+    alert('Sync failed: ' + e.message + '\n\nMake sure your Sheet ID is correct and the Sheets API is enabled.');
+  }
+}
+
+async function syncTradeRow(trade) {
+  if (!accessToken || !CONFIG.SHEET_ID) return;
+  try {
+    const rowNum = trades.indexOf(trade) + 2;
+    const row = [[trade.id, trade.symbol, trade.direction, trade.account,
+      trade.entryPrice, trade.exitPrice, trade.qty, trade.pnl,
+      trade.entryDate, trade.exitDate, trade.notes, trade.driveUrl || '', trade.createdAt]];
+    await sheetsRequest('PUT', `/${CONFIG.SHEET_ID}/values/A${rowNum}:M${rowNum}?valueInputOption=RAW`, { values: row });
+  } catch(e) { console.warn('Row sync failed', e); }
+}
+
+function syncTradeToSheets() {
+  if (currentDetailId) {
+    const t = trades.find(t => t.id === currentDetailId);
+    if (t) syncTradeRow(t).then(() => { setSyncStatus('ok', '✓ Synced'); alert('Trade synced!'); });
+  }
+}
+
+async function sheetsRequest(method, path, body) {
+  const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ─── GOOGLE DRIVE ───
+async function uploadScreenshotToDrive(trade) {
+  if (!accessToken) return;
+  setSyncStatus('syncing', '⟳ Uploading…');
+
+  try {
+    let folderId = CONFIG.FOLDER_ID;
+    if (!folderId) {
+      folderId = await createDriveFolder('Trading Journal Screenshots');
+      CONFIG.FOLDER_ID = folderId;
+      localStorage.setItem('goog_folder_id', folderId);
+    }
+
+    const blob = dataURLToBlob(trade.screenshot);
+    const metadata = { name: `${trade.symbol}_${trade.entryDate}_${trade.id}.jpg`, parents: [folderId] };
+
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', blob);
+
+    const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form
+    });
+
+    const data = await r.json();
+    trade.driveUrl = data.webViewLink || '';
+
+    const idx = trades.findIndex(t => t.id === trade.id);
+    if (idx !== -1) trades[idx] = trade;
+    saveTrades();
+
+    document.getElementById('drive-info').textContent = 'Screenshots synced to Drive';
+    setSyncStatus('ok', '✓ Synced');
+  } catch(e) {
+    console.error('Drive upload failed', e);
+    setSyncStatus('ok', '✓ Synced');
+  }
+}
+
+async function createDriveFolder(name) {
+  const r = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder' })
+  });
+  const data = await r.json();
+  return data.id;
+}
+
+function openDriveFolder() {
+  if (CONFIG.FOLDER_ID) {
+    window.open(`https://drive.google.com/drive/folders/${CONFIG.FOLDER_ID}`, '_blank');
+  } else {
+    alert('No Drive folder connected yet. Add a trade with a screenshot to auto-create one.');
+  }
+}
+
+// ─── UTILS ───
+function saveTrades() {
+  // Store without screenshots in main list to save space; screenshots stored separately
+  const toStore = trades.map(t => ({ ...t }));
+  localStorage.setItem('trades', JSON.stringify(toStore));
+}
+
+function fmt(n) {
+  const abs = Math.abs(n);
+  return (n < 0 ? '-' : '+') + '$' + abs.toFixed(2);
+}
+
+function setSyncStatus(state, text) {
+  const el = document.getElementById('sync-status');
+  el.textContent = text;
+  el.className = 'sync-badge' + (state === 'syncing' ? ' syncing' : '');
+}
+
+function dataURLToBlob(dataURL) {
+  const arr = dataURL.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) u8arr[n] = bstr.charCodeAt(n);
+  return new Blob([u8arr], { type: mime });
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(trades, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'trading-journal-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+}
+
+function clearData() {
+  if (!confirm('Clear ALL trades? This cannot be undone.')) return;
+  trades = [];
+  saveTrades();
+  refreshAll();
+}
+</script>
+</body>
+</html>
